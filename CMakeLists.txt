@@ -304,7 +304,7 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES
     if (MSVC)
         # TODO [llama.cpp]: arm msvc?
     else()
-        if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64")
+        if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64" AND NOT ANDROID)
             add_compile_options(-mcpu=native)
         endif()
         # TODO [llama.cpp]: armv6,7,8 version specific flags
