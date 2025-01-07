@@ -123,7 +123,7 @@ static bool rwkv_set_params(struct rwkv_model & model, F callback, const uint32_
     for (uint32_t i = 0; i < n_layer; i++) {
         bool offload_layer = (i < n_gpu);
         char buffer[128];
-        size_t offset = sprintf(buffer, "blocks.%" PRId32 ".", i);
+        size_t offset = snprintf(buffer, sizeof(buffer), "blocks.%" PRId32 ".", i);
 
         rwkv_layer & layer = model.layers[i];
         RWKV_ENSURE_OR_FALSE(callback((strcpy(&buffer[offset], "ln1.weight"), buffer), layer.ln1_weight, offload_layer));
@@ -227,7 +227,7 @@ static bool rwkv_set_params_gguf(struct rwkv_model & model, F callback, const ui
     for (uint32_t i = 0; i < n_layer; i++) {
         bool offload_layer = (i < n_gpu);
         char buffer[128];
-        size_t offset = sprintf(buffer, "blk.%" PRId32 ".", i);
+        size_t offset = snprintf(buffer, sizeof(buffer), "blk.%" PRId32 ".", i);
 
         rwkv_layer & layer = model.layers[i];
         RWKV_ENSURE_OR_FALSE(callback((strcpy(&buffer[offset], "attn_norm.weight"), buffer), layer.ln1_weight, offload_layer));
@@ -389,7 +389,7 @@ static bool rwkv_load_model_from_bin_file(const char * file_path, struct rwkv_mo
     fseek(file.file, tensors_file_start, SEEK_SET);
     while ((size_t) ftell(file.file) < (size_t) file_stat.st_size) {
         RWKV_ASSERT_FALSE_MSG(RWKV_ERROR_MODEL_PARAMS, 
-            rwkv_fread_ggml_tensor_data(file.file, model.ggml_ctx, parameters_ref),
+            rwkv_fread_ggml_tensor_data(file.file, parameters_ref),
             "Failed to read a model parameter");
     }
 
@@ -420,8 +420,6 @@ static bool rwkv_gguf_get_key_u32(gguf_context * gguf_ctx, const char * key, uin
 static bool rwkv_load_model_from_gguf_file(const char * file_path, struct rwkv_model & model, const uint32_t n_gpu_layers) {
     gguf_context * gguf_ctx = gguf_init_from_file(file_path, {true, &model.ggml_ctx});
 
-    // int n_kv = gguf_get_n_kv(gguf_ctx);
-    int n_tensors = gguf_get_n_tensors(gguf_ctx);
     std::string arch = std::string(gguf_get_val_str(gguf_ctx, gguf_find_key(gguf_ctx, "general.architecture")));
     if (arch == "rwkv6") {
         model.arch_version_major = 6;
@@ -543,6 +541,8 @@ static bool rwkv_load_model_from_file(const char * file_path, struct rwkv_model 
             return rwkv_load_model_from_bin_file(file_path, model, n_gpu_layers);
         } else if (extension == "gguf") {
             return rwkv_load_model_from_gguf_file(file_path, model, n_gpu_layers);
+        } else {
+            RWKV_ASSERT_FALSE_MSG(RWKV_ERROR_MODEL, false, "Failed to load model: %s", file_path);
         }
     } else {
         // try the legacy format anyway
