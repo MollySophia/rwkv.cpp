@@ -59,6 +59,8 @@ def write_state_dict(state_dict: Dict[str, torch.Tensor], dest_path: str, data_t
                         [state_dict_new[f'blocks.{l}.att.x_rwkvag'], state_dict[k]], dim=0)
                 except KeyError:
                     state_dict_new[f'blocks.{l}.att.x_rwkvag'] = state_dict[k]
+            elif any(['blocks.0.att.v0' in k, 'blocks.0.att.v1' in k, 'blocks.0.att.v2' in k]):
+                continue
             else:
                 state_dict_new[k] = state_dict[k]
 
